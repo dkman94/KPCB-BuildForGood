@@ -9,7 +9,7 @@
     tools:context=".HomeActivity">
 
     <TextView
-        android:text="Our KPCB Project"
+        android:text="Our KPCB Build For Good Project"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
