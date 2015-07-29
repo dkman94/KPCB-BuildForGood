@@ -1,6 +1,9 @@
 package app.android.kpcbmyanmarmapper;
 
+import android.content.Context;
 import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationManager;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -15,8 +18,8 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +46,17 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         mCalculateButton = (Button) findViewById(R.id.calculate_polyline_area);
         mAreaCalculateTextView = (TextView) findViewById(R.id.calculation_area);
 
-        mPrevLatLng = new LatLng(22.0, 96.0);
+        double longitude = 22.0;
+        double latitude = 96.0;
+
+        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        if(location != null){
+            longitude = location.getLongitude();
+            latitude = location.getLatitude();
+        }
+
+        mPrevLatLng = new LatLng(longitude, latitude);
         mLatLngPolylineList = new ArrayList<LatLng>();
         mLatLngPolylineList.add(mPrevLatLng);
 
@@ -79,13 +92,11 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         googleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
             public void onMapLongClick(LatLng latLng) {
-                googleMap.addPolyline(new PolylineOptions()
-                .add(mPrevLatLng, latLng)
-                .width(3)
-                .color(Color.RED));
 
                 mLatLngPolylineList.add(latLng);
                 mPrevLatLng = latLng;
+
+                constructAndShowPolygon(googleMap);
             }
         });
 
@@ -93,11 +104,26 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 Double areaInMeters = computeArea(mLatLngPolylineList);
-                mAreaCalculateTextView.setText(String.valueOf(areaInMeters));
+                mAreaCalculateTextView.setText(String.format("%.2f", areaInMeters / 1000));
             }
         });
 
 
+    }
+
+    private void constructAndShowPolygon(final GoogleMap map){
+        HomeActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                PolygonOptions polygonOptions = new PolygonOptions();
+                polygonOptions.addAll(mLatLngPolylineList);
+                Polygon polygon = map.addPolygon(polygonOptions
+                        .add(mLatLngPolylineList.get(0))
+                        .strokeColor(Color.RED)
+                        .fillColor(Color.GRAY));
+
+            }
+        });
     }
 
     private static double polarTriangleArea(double tan1, double lng1, double tan2, double lng2) {
