@@ -30,6 +30,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     private Button mCalculateButton;
     private TextView mAreaCalculateTextView;
     private LatLng mPrevLatLng;
+    private LatLng mInitialLatLng;
     final static LatLng sMyanmarLatLng = new LatLng(22.0,96.0);
     static final double EARTH_RADIUS = 6371009;
 
@@ -46,17 +47,16 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
         mCalculateButton = (Button) findViewById(R.id.calculate_polyline_area);
         mAreaCalculateTextView = (TextView) findViewById(R.id.calculation_area);
 
-        double longitude = 22.0;
-        double latitude = 96.0;
 
-        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if(location != null){
-            longitude = location.getLongitude();
-            latitude = location.getLatitude();
-        }
+        UserLocation.LocationResult locationResult = new UserLocation.LocationResult() {
+            @Override
+            public void gotLocationLatLong(Double latitude, Double longitude) {
+                mInitialLatLng = new LatLng(latitude,longitude);
+                mPrevLatLng = new LatLng(latitude, longitude);
+            }
+        };
 
-        mPrevLatLng = new LatLng(longitude, latitude);
+
         mLatLngPolylineList = new ArrayList<LatLng>();
         mLatLngPolylineList.add(mPrevLatLng);
 
@@ -85,9 +85,10 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(final GoogleMap googleMap) {
         googleMap.addMarker(new MarkerOptions()
-                .position(sMyanmarLatLng)
+                .position(mInitialLatLng)
                 .title("Myanmar"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLng(sMyanmarLatLng));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(mInitialLatLng));
+        googleMap.moveCamera(CameraUpdateFactory.zoomTo(6));
 
         googleMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
@@ -117,7 +118,7 @@ public class HomeActivity extends FragmentActivity implements OnMapReadyCallback
             public void run() {
                 PolygonOptions polygonOptions = new PolygonOptions();
                 polygonOptions.addAll(mLatLngPolylineList);
-                Polygon polygon = map.addPolygon(polygonOptions
+                map.addPolygon(polygonOptions
                         .add(mLatLngPolylineList.get(0))
                         .strokeColor(Color.RED)
                         .fillColor(Color.GRAY));
